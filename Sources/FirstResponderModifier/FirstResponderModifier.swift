@@ -10,6 +10,7 @@ import SwiftUI
 import Combine
 import Introspect
 import InterposeKit
+import SwiftUIX
 
 public struct FirstResponderModifier: ViewModifier {
   @Binding var isFirstResponder: Bool
@@ -28,13 +29,18 @@ public struct FirstResponderModifier: ViewModifier {
       .onReceive(Just(isFirstResponder)) { _ in
         updateFirstResponder()
       }
+      .onAppear {
+        /// w8 for the end of modal/navigation controller transition
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(900)) {
+          self.updateFirstResponder()
+        }
+      }
   }
 
   private func updateResponderViewIfNeeded(_ view: UIView) {
     guard responderView !== view else { return }
 
     responderView = view
-    updateFirstResponder()
 
     let type = type(of: view)
     _ = try? view.hook(
