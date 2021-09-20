@@ -10,12 +10,11 @@ import SwiftUI
 import Combine
 import Introspect
 import InterposeKit
-import SwiftUIX
 
 public struct FirstResponderModifier: ViewModifier {
   @Binding var isFirstResponder: Bool
 
-  @State private var responderView: UIView?
+  @State private var responderViewSubject = CurrentValueSubject<UIView?, Never>(nil)
 
   public func body(content: Content) -> some View {
     content
@@ -26,31 +25,27 @@ public struct FirstResponderModifier: ViewModifier {
         guard let view = $0 as? UITextView else { return }
         updateResponderViewIfNeeded(view)
       }
-      .onReceive(Just(isFirstResponder)) { _ in
+      .onReceive(responderViewSubject) { _ in
         updateFirstResponder()
       }
-      .onAppear {
-        /// w8 for the end of modal/navigation controller transition
-        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(900)) {
-          self.updateFirstResponder()
-        }
+      .onReceive(Just(isFirstResponder)) { _ in
+        updateFirstResponder()
       }
   }
 
   private func updateResponderViewIfNeeded(_ view: UIView) {
-    guard responderView !== view else { return }
-
-    responderView = view
+    guard responderViewSubject.value !== view else { return }
+    responderViewSubject.send(view)
 
     let type = type(of: view)
     _ = try? view.hook(
       #selector(type.becomeFirstResponder),
       methodSignature: (@convention(c) (AnyObject, Selector) -> Bool).self,
       hookSignature: (@convention(block) (AnyObject) -> Bool).self) { store in
-      { `self` in
-        let result = store.original(`self`, store.selector)
-        if !isFirstResponder {
-          isFirstResponder = true
+      {
+        let result = store.original($0, store.selector)
+        if !self.isFirstResponder {
+          self.isFirstResponder = true
         }
         return result
       }
@@ -60,10 +55,10 @@ public struct FirstResponderModifier: ViewModifier {
       #selector(type.resignFirstResponder),
       methodSignature: (@convention(c) (AnyObject, Selector) -> Bool).self,
       hookSignature: (@convention(block) (AnyObject) -> Bool).self) { store in
-      { `self` in
-        let result = store.original(`self`, store.selector)
-        if isFirstResponder {
-          isFirstResponder = false
+      {
+        let result = store.original($0, store.selector)
+        if self.isFirstResponder {
+          self.isFirstResponder = false
         }
         return result
       }
@@ -71,10 +66,17 @@ public struct FirstResponderModifier: ViewModifier {
   }
 
   private func updateFirstResponder() {
-    if isFirstResponder {
-      responderView?.becomeFirstResponder()
-    } else {
-      responderView?.resignFirstResponder()
+    guard let view = responderViewSubject.value else { return }
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(550)) {
+      switch (isFirstResponder, view.isFirstResponder) {
+      case (true, false):
+        view.becomeFirstResponder()
+      case (false, true):
+        view.resignFirstResponder()
+      default:
+        break
+      }
     }
   }
 }
