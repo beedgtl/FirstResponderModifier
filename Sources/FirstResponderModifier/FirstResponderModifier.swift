@@ -25,10 +25,10 @@ public struct FirstResponderModifier: ViewModifier {
         guard let view = $0 as? UITextView else { return }
         updateResponderViewIfNeeded(view)
       }
-      .onReceive(responderViewSubject) { _ in
+      .onChange(of: responderViewSubject.value) { _ in
         updateFirstResponder()
       }
-      .onReceive(Just(isFirstResponder)) { _ in
+      .onChange(of: isFirstResponder) { _ in
         updateFirstResponder()
       }
   }
@@ -42,8 +42,8 @@ public struct FirstResponderModifier: ViewModifier {
       #selector(type.becomeFirstResponder),
       methodSignature: (@convention(c) (AnyObject, Selector) -> Bool).self,
       hookSignature: (@convention(block) (AnyObject) -> Bool).self) { store in
-      {
-        let result = store.original($0, store.selector)
+      { view in
+        let result = store.original(view, store.selector)
         if !self.isFirstResponder {
           self.isFirstResponder = true
         }
@@ -55,11 +55,12 @@ public struct FirstResponderModifier: ViewModifier {
       #selector(type.resignFirstResponder),
       methodSignature: (@convention(c) (AnyObject, Selector) -> Bool).self,
       hookSignature: (@convention(block) (AnyObject) -> Bool).self) { store in
-      {
-        let result = store.original($0, store.selector)
-        if self.isFirstResponder {
+      { view in
+        if self.isFirstResponder && view.isFirstResponder {
           self.isFirstResponder = false
         }
+        let result = store.original(view, store.selector)
+
         return result
       }
     }
