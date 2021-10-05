@@ -5,9 +5,9 @@
         "package": "InterposeKit",
         "repositoryURL": "https://github.com/Overcot/InterposeKit",
         "state": {
-          "branch": "master",
+          "branch": null,
           "revision": "61076c73afffe3ff19c3311c1e839eda43aafc4d",
-          "version": null
+          "version": "0.0.3"
         }
       },
       {

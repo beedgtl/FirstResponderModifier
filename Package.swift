@@ -24,7 +24,7 @@ let package = Package(
     .package(
       name: "InterposeKit",
       url: "https://github.com/Overcot/InterposeKit",
-      .branch("master")
+      .exact("0.0.3")
     )
   ],
   targets: [
