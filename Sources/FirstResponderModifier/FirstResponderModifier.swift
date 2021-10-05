@@ -87,6 +87,7 @@ public struct FirstResponderModifier: ViewModifier {
       #endif
       switch (isFirstResponder, viewIsFirstResponder) {
       case (true, false):
+        guard view.window != nil else { return }
         view.becomeFirstResponder()
       case (false, true):
         view.resignFirstResponder()
