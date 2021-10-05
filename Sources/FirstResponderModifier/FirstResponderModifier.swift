@@ -12,9 +12,17 @@ import Introspect
 import InterposeKit
 
 public struct FirstResponderModifier: ViewModifier {
+  #if canImport(UIKit)
+  private typealias AppKitOrUIKitView = UIView
+  private typealias AppKitOrUIKitTextView = UITextView
+  #endif
+  #if canImport(AppKit)
+  private typealias AppKitOrUIKitView = NSView
+  private typealias AppKitOrUIKitTextView = NSTextView
+  #endif
   @Binding var isFirstResponder: Bool
 
-  @State private var responderViewSubject = CurrentValueSubject<UIView?, Never>(nil)
+  @State private var responderViewSubject = CurrentValueSubject<AppKitOrUIKitView?, Never>(nil)
 
   public func body(content: Content) -> some View {
     content
@@ -22,7 +30,7 @@ public struct FirstResponderModifier: ViewModifier {
         updateResponderViewIfNeeded(view)
       }
       .introspectScrollView {
-        guard let view = $0 as? UITextView else { return }
+        guard let view = $0 as? AppKitOrUIKitTextView else { return }
         updateResponderViewIfNeeded(view)
       }
       .onChange(of: responderViewSubject.value) { _ in
@@ -33,7 +41,7 @@ public struct FirstResponderModifier: ViewModifier {
       }
   }
 
-  private func updateResponderViewIfNeeded(_ view: UIView) {
+  private func updateResponderViewIfNeeded(_ view: AppKitOrUIKitView) {
     guard responderViewSubject.value !== view else { return }
     responderViewSubject.send(view)
 
@@ -70,7 +78,14 @@ public struct FirstResponderModifier: ViewModifier {
     guard let view = responderViewSubject.value else { return }
 
     DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(550)) {
-      switch (isFirstResponder, view.isFirstResponder) {
+      let viewIsFirstResponder: Bool
+      #if canImport(UIKit)
+      viewIsFirstResponder = view.isFirstResponder
+      #endif
+      #if canImport(AppKit)
+      viewIsFirstResponder = view.window?.firstResponder == view
+      #endif
+      switch (isFirstResponder, viewIsFirstResponder) {
       case (true, false):
         view.becomeFirstResponder()
       case (false, true):
