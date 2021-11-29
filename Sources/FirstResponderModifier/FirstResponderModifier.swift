@@ -14,11 +14,8 @@ import InterposeKit
 public struct FirstResponderModifier: ViewModifier {
   #if canImport(UIKit)
   private typealias AppKitOrUIKitView = UIView
-  private typealias AppKitOrUIKitTextView = UITextView
-  #endif
-  #if canImport(AppKit)
+  #elseif canImport(AppKit)
   private typealias AppKitOrUIKitView = NSView
-  private typealias AppKitOrUIKitTextView = NSTextView
   #endif
   @Binding var isFirstResponder: Bool
 
@@ -29,10 +26,12 @@ public struct FirstResponderModifier: ViewModifier {
       .introspectTextField { view in
         updateResponderViewIfNeeded(view)
       }
+      #if canImport(UIKit)
       .introspectScrollView {
-        guard let view = $0 as? AppKitOrUIKitTextView else { return }
+        guard let view = $0 as? UITextView else { return }
         updateResponderViewIfNeeded(view)
       }
+      #endif
       .onChange(of: responderViewSubject.value) { _ in
         updateFirstResponder()
       }
@@ -81,8 +80,7 @@ public struct FirstResponderModifier: ViewModifier {
       let viewIsFirstResponder: Bool
       #if canImport(UIKit)
       viewIsFirstResponder = view.isFirstResponder
-      #endif
-      #if canImport(AppKit)
+      #elseif canImport(AppKit)
       viewIsFirstResponder = view.window?.firstResponder == view
       #endif
       switch (isFirstResponder, viewIsFirstResponder) {
