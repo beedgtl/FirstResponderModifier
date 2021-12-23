@@ -23,8 +23,8 @@ let package = Package(
     ),
     .package(
       name: "InterposeKit",
-      url: "https://github.com/Overcot/InterposeKit",
-      .exact("0.0.3")
+      url: "https://github.com/beedgtl/InterposeKit",
+      .exact("0.0.4")
     )
   ],
   targets: [
@@ -40,7 +40,8 @@ let package = Package(
     .testTarget(
       name: "FirstResponderModifierTests",
       dependencies: [
-        "FirstResponderModifier"]
+        "FirstResponderModifier"
+      ]
     )
   ]
 )
